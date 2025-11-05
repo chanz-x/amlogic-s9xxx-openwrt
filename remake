@@ -72,14 +72,14 @@ host_release="$(cat /etc/os-release | grep '^VERSION_CODENAME=.*' | cut -d'=' -f
 board_release_file="etc/openwrt-board-release.conf"
 # Add custom OpenWrt firmware information
 op_release="etc/flippy-openwrt-release"
-chanz-x_release_file="etc/chanz-x-release"
+ophub_release_file="etc/ophub-release"
 
 # Dependency files download repository
 depends_repo="https://github.com/chanz-x/amlogic-s9xxx-armbian"
 # U-BOOT files download repository
 uboot_repo="https://github.com/chanz-x/u-boot"
 # Firmware files download repository
-firmware_repo="https://github.com/chanz-x/firmware"
+firmware_repo="https://github.com/ophub/firmware"
 # Install/Update script files download repository
 script_repo="https://github.com/ophub/luci-app-amlogic"
 
@@ -106,10 +106,11 @@ declare -A tags_list
 # Set the Amlogic's u-boot series(u-boot-xxx.bin)
 uboot_meson_gxl=("p201.bin" "p212.bin" "s905x-s912.bin" "n1.bin" "r3300l.bin")
 uboot_meson_gxm=("p212.bin" "s905x-s912.bin" "zyxq.bin")
-uboot_meson_g12a=("x96max.bin" "e900v22c.bin")
+uboot_meson_g12a=("x96max.bin" "e900v22c.bin" "b860h-v5.bin" "hg680-fj.bin")
 uboot_meson_g12b=("gtking.bin" "gtkingpro.bin" "gtkingpro-rev-a.bin" "s905x2-s922.bin")
 uboot_meson_sm1=("x96maxplus.bin" "ugoos-x3.bin" "tx3-qz.bin" "tx3-bz.bin" "skyworth-lb2004.bin")
 uboot_meson_gxbb=("p201.bin" "s905.bin")
+uboot_meson_sc2=("s905x4.bin")
 
 # Initialize the build device
 make_board="all"
@@ -1188,7 +1189,7 @@ EOF
     echo "CONTRIBUTORS='${CONTRIBUTORS}'" >>${op_release}
     echo "PACKAGED_DATE='$(date +%Y-%m-%d)'" >>${op_release}
     # Creating an Alias
-    ln -sf ${op_release#*/} ${chanz-x_release_file}
+    ln -sf ${op_release#*/} ${ophub_release_file}
 
     # Remove the menus that are not applicable in the model
     install_menu=$(echo "${model_txt}" | awk -F'/' '{print $(NF-1)"/"$NF}')
