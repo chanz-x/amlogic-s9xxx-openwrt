@@ -78,21 +78,24 @@ ophub_release_file="etc/ophub-release"
 # Dependency files download repository
 depends_repo="https://github.com/ophub/amlogic-s9xxx-armbian"
 # U-BOOT files download repository
-uboot_repo="https://github.com/ophub/u-boot"
+uboot_repo="https://github.com/syntax-xidz/u-boot"
 # Firmware files download repository
 firmware_repo="https://github.com/ophub/firmware"
 # Install/Update script files download repository
 script_repo="https://github.com/ophub/luci-app-amlogic"
 
 # Set the kernel download repository
+# kernel_repo="https://github.com/armarchindo/kernel"
 kernel_repo="https://github.com/ophub/kernel"
+# kernel_repo="https://github.com/syntax-xidz/kernel"
 # Set the kernel tags (kernel_xxx) that can be overridden via the [ -u ] parameter
 default_tags="stable"
 kernel_usage=""
 # Set the list of kernels used by default(Selectable version)
-stable_kernel=("6.12.y" "6.18.y")
+stable_kernel=("5.15.y" "6.1.y" "6.2.y" "6.3.y" "6.4.y" "6.6.y" "6.12.y" "6.18.y")
 flippy_kernel=(${stable_kernel[@]})
 beta_kernel=(${stable_kernel[@]})
+dev_kernel=(${stable_kernel[@]})
 rk3588_kernel=("6.1.y")
 rk35xx_kernel=("6.1.y")
 h6_kernel=("6.6.y")
@@ -106,10 +109,11 @@ declare -A tags_list
 # Set the Amlogic u-boot series (u-boot-xxx.bin)
 uboot_meson_gxl=("p201.bin" "p212.bin" "s905x-s912.bin" "n1.bin" "r3300l.bin")
 uboot_meson_gxm=("p212.bin" "s905x-s912.bin" "zyxq.bin")
-uboot_meson_g12a=("x96max.bin" "e900v22c.bin")
+uboot_meson_g12a=("x96max.bin" "e900v22c.bin" "b860h-v5.bin" "hg680-fj.bin")
 uboot_meson_g12b=("gtking.bin" "gtkingpro.bin" "gtkingpro-rev-a.bin" "s905x2-s922.bin")
 uboot_meson_sm1=("x96maxplus.bin" "ugoos-x3.bin" "tx3-qz.bin" "tx3-bz.bin" "skyworth-lb2004.bin")
 uboot_meson_gxbb=("p201.bin" "s905.bin")
+uboot_meson_sc2=("s905x4.bin")
 
 # Set OpenWrt default IP address
 openwrt_ip="192.168.1.1"
@@ -229,6 +233,7 @@ init_var() {
                 stable_kernel=(${2})
                 flippy_kernel=(${2})
                 beta_kernel=(${2})
+                dev_kernel=(${2})
                 specific_kernel=(${2})
                 IFS="${oldIFS}"
                 shift 2
@@ -289,9 +294,9 @@ init_var() {
         fi
     }
 
-    # Validate partition sizes (Unit: MiB). Boot must be >= 256 and root >= 1024 to fit.
+    # Validate partition sizes (Unit: MiB). Boot must be >= 256 and root >= 512 to fit.
     [[ "${boot_mb}" =~ ^[0-9]+$ && "${boot_mb}" -ge 256 ]] || error_msg "Invalid boot partition size: [ ${boot_mb} ]"
-    [[ "${root_mb}" =~ ^[0-9]+$ && "${root_mb}" -ge 1024 ]] || error_msg "Invalid rootfs partition size: [ ${root_mb} ]"
+    [[ "${root_mb}" =~ ^[0-9]+$ && "${root_mb}" -ge 512 ]] || error_msg "Invalid rootfs partition size: [ ${root_mb} ]"
 }
 
 check_data() {
@@ -747,7 +752,8 @@ confirm_version() {
     latest_kernel=(${tags_list[${conf_kernel_tags}]})
     for ck in "${model_kernel[@]}"; do
         for lk in "${latest_kernel[@]}"; do
-            [[ "${lk}" =~ ^${ck}$ ]] && build_kernel+=("${lk}")
+            # Match parsed digits or fallback to literal '.y' suffix
+            [[ "${lk}" =~ ^${ck}$ || "${lk}" == "${ck//\[0-9\]+/y}" ]] && build_kernel+=("${lk}")
         done
     done
     # Check the kernel version
@@ -1355,8 +1361,23 @@ echo -e "${INFO} Build server environment: [ Release: ${host_release} / Host: ${
 # Check script permission
 [[ "$(id -u)" == 0 ]] || error_msg "please run this script as root: [ sudo ./${0} ]"
 
-# Initialize variables and download the kernel
+# Initialize variables
 init_var "${@}"
+
+# =========================================================================
+# [ UPDATE SECTION ] MULTI-REPO KERNEL SUPPORT
+# Intercept and modify kernel_repo based on target board before check_data
+# =========================================================================
+if [[ "${make_board}" =~ (s905x2-hg680-fj-v2|s905x2-b860h-v5-v2) ]]; then
+    kernel_repo="https://github.com/armarchindo/kernel"
+    echo -e "${INFO} Board [ ${BASH_REMATCH[1]} ] detected. Switching Kernel Repo to: ${kernel_repo}"
+elif [[ "${make_board}" =~ (s905x2-hg680fj|s905x2-b860hv5|s905x-wifion|s905x-b860h-wifion) ]]; then
+    kernel_repo="https://github.com/syntax-xidz/kernel"
+    echo -e "${INFO} Board [ ${BASH_REMATCH[1]} ] detected. Switching Kernel Repo to: ${kernel_repo}"
+fi
+# =========================================================================
+
+# Check data and process kernel tags
 check_data
 # Find OpenWrt file
 find_openwrt
